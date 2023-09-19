@@ -1,2 +1,7 @@
 venv
 .idea
+**/__pycache__/
+
+
+Lab_1/output.html
+Lab_1/outputs
