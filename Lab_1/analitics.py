@@ -1,8 +1,7 @@
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from scrapper import scrap_file
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 import tkinter as tk
 
 
@@ -30,13 +29,19 @@ def analyze_real_data(dates: list, real_inflation_values: list) -> None:
     ax.grid(True)
 
 
-def generate_and_analyze_synthetic_data(dates: list, real_inflation_values: list) -> tuple:
-    degree = 15
-    noise_std = 0.5
+def generate_and_analyze_synthetic_data(dates: list, real_inflation_values: list, is_printed: bool, predict: bool,
+                                        degree=15) -> tuple:
+    noise_std = 0.2
 
     np.random.seed(0)
     coefficients = np.polyfit(np.arange(len(dates)), real_inflation_values, degree)
-    synthetic_trend_values = np.polyval(coefficients, np.arange(len(dates)))
+    if predict:
+        last_date = max(dates)
+        additional_dates = [last_date + timedelta(days=30 * i) for i in range(1, 41)]
+        dates += additional_dates
+        synthetic_trend_values = np.polyval(coefficients, np.arange(len(dates)))
+    else:
+        synthetic_trend_values = np.polyval(coefficients, np.arange(len(dates)))
     print("\nModel:")
     print(np.poly1d(coefficients))
     synthetic_inflation_values = synthetic_trend_values + np.random.normal(0, noise_std, len(dates))
@@ -46,25 +51,27 @@ def generate_and_analyze_synthetic_data(dates: list, real_inflation_values: list
     # anomaly_value = 10.0
     # synthetic_inflation_values[anomaly_index] = anomaly_value
 
-    synthetic_mean_inflation = np.mean(synthetic_inflation_values)
-    synthetic_std_deviation_inflation = np.std(synthetic_inflation_values)
-    synthetic_median_inflation = np.median(synthetic_inflation_values)
-    synthetic_min_inflation = np.min(synthetic_inflation_values)
-    synthetic_max_inflation = np.max(synthetic_inflation_values)
-    synthetic_variance_inflation = np.var(synthetic_inflation_values)
+    if is_printed:
+        synthetic_mean_inflation = np.mean(synthetic_inflation_values)
+        synthetic_std_deviation_inflation = np.std(synthetic_inflation_values)
+        synthetic_median_inflation = np.median(synthetic_inflation_values)
+        synthetic_min_inflation = np.min(synthetic_inflation_values)
+        synthetic_max_inflation = np.max(synthetic_inflation_values)
+        synthetic_variance_inflation = np.var(synthetic_inflation_values)
 
-    print("\nSynthetic Data Statistics:")
-    print("Mean inflation value:", synthetic_mean_inflation)
-    print("Standard deviation of inflation:", synthetic_std_deviation_inflation)
-    print("Median inflation:", synthetic_median_inflation)
-    print("Minimum inflation value:", synthetic_min_inflation)
-    print("Maximum inflation value:", synthetic_max_inflation)
-    print("Inflation variance:", synthetic_variance_inflation)
+        print("\nSynthetic Data Statistics:")
+        print("Mean inflation value:", synthetic_mean_inflation)
+        print("Standard deviation of inflation:", synthetic_std_deviation_inflation)
+        print("Median inflation:", synthetic_median_inflation)
+        print("Minimum inflation value:", synthetic_min_inflation)
+        print("Maximum inflation value:", synthetic_max_inflation)
+        print("Inflation variance:", synthetic_variance_inflation)
 
     return synthetic_trend_values, synthetic_inflation_values
 
 
 if __name__ == '__main__':
+    from scrapper import scrap_file
     data = scrap_file(create_file=False)
     data = data[::-1]
     parsed_dates = [datetime.strptime(d['date'], '%d.%m.%Y').date() for d in data]
